@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>품목내역 메이커 — 견적서 PDF를 품의용 엑셀로</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+
+<!-- ================= Style (외부 CSS 프레임워크 없이 동작) ================= -->
+<style>
+:root{
+  --mint:#10B981; --mint-dark:#059669; --mint-soft:#ECFDF5;
+  --bg:#F8FAFC; --ink:#1E293B; --sub:#64748B; --line:#E2E8F0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px}
+.sub{font-size:13px;color:var(--sub);margin:3px 0 0}
+
+/* ---- Hero : 프로그램명 ---- */
+header{padding:34px 0 20px}
+.hero{position:relative;overflow:hidden;border-radius:26px;padding:46px 28px 42px;text-align:center;
+  background:linear-gradient(135deg,#047857 0%,#10B981 55%,#4ADE80 100%);
+  box-shadow:0 14px 40px rgba(16,185,129,.32)}
+.hero::before{content:'';position:absolute;top:-90px;right:-70px;width:240px;height:240px;border-radius:50%;
+  background:rgba(255,255,255,.13)}
+.hero::after{content:'';position:absolute;bottom:-110px;left:-60px;width:230px;height:230px;border-radius:50%;
+  background:rgba(255,255,255,.10)}
+.chip{position:relative;display:inline-block;font-size:12px;font-weight:700;letter-spacing:.02em;
+  padding:7px 15px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff;margin-bottom:18px;
+  backdrop-filter:blur(4px)}
+h1{position:relative;margin:0;font-size:52px;font-weight:900;letter-spacing:-.045em;line-height:1.1;color:#fff;
+  text-shadow:0 3px 14px rgba(4,120,87,.35)}
+.tagline{position:relative;margin:16px 0 0;font-size:15px;font-weight:500;color:rgba(255,255,255,.9)}
+
+/* ---- 사용 방법 (한 줄) ---- */
+.guide{padding:18px 24px}
+.steps{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:999px;background:var(--bg);transition:all .2s}
+.step:hover{background:var(--mint-soft);transform:translateY(-2px)}
+.stepno{width:22px;height:22px;flex:0 0 auto;border-radius:999px;background:var(--mint);color:#fff;
+  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.step b{font-size:14px;font-weight:700;white-space:nowrap}
+.step.last{background:var(--mint-soft)}
+.step.last b{color:var(--mint-dark)}
+.arrow{color:#CBD5E1;font-size:20px;font-weight:700}
+.guide-tip{margin:14px 0 0;text-align:center;font-size:12.5px;color:var(--sub)}
+.guide-tip b{color:var(--ink);font-weight:700}
+
+.card{background:#fff;border-radius:20px;padding:28px;margin-bottom:20px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 30px rgba(15,23,42,.06)}
+
+/* 상태 배너 */
+#status{display:flex;align-items:center;gap:10px;font-size:13px;padding:12px 16px;border-radius:14px;margin-bottom:16px}
+#status.load{background:#F1F5F9;color:var(--sub)}
+#status.ok{background:var(--mint-soft);color:var(--mint-dark)}
+#status.err{background:#FEF2F2;color:#B91C1C}
+.dot{width:8px;height:8px;border-radius:99px;background:currentColor;animation:pulse 1s infinite;flex:0 0 auto}
+@keyframes pulse{50%{opacity:.25}}
+
+/* 드롭존 */
+#drop{border-radius:16px;padding:44px 20px;text-align:center;cursor:pointer;background:var(--bg);
+  box-shadow:0 0 0 2px var(--line) inset;transition:all .2s ease}
+#drop:hover{background:#fff;box-shadow:0 0 0 2px var(--mint) inset;transform:translateY(-2px)}
+#drop.on{background:var(--mint-soft);box-shadow:0 0 0 3px var(--mint) inset}
+#drop.off{opacity:.5;pointer-events:none}
+.dz-ico{font-size:38px;margin-bottom:10px}
+.dz-t{font-weight:700}
+.dz-s{font-size:13px;color:var(--sub);margin-top:5px}
+.only-mo{display:none}
+
+/* 파일 목록 */
+#fileList{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.file{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--bg);transition:all .2s}
+.file:hover{background:#F1F5F9}
+.badge{width:36px;height:36px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:14px}
+.b-run{background:#94A3B8} .b-ok{background:var(--mint)} .b-warn{background:#F59E0B} .b-err{background:#DC2626}
+.f-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f-meta{font-size:12px;color:var(--sub);margin-top:2px}
+.kind{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;margin-right:6px;
+  background:#E2E8F0;color:#475569;vertical-align:1px}
+.f-meta .warn{color:#B45309;font-weight:600}
+.icobtn{width:32px;height:32px;border:0;border-radius:10px;background:#fff;color:var(--sub);cursor:pointer;
+  box-shadow:0 1px 2px rgba(15,23,42,.08);transition:all .2s;font-size:13px;flex:0 0 auto}
+.icobtn:hover{transform:translateY(-1px);color:var(--ink)}
+.icobtn:active{transform:scale(.92)}
+.icobtn.del:hover{color:#DC2626}
+
+/* 옵션 */
+.opts{margin-top:22px;padding-top:18px;border-top:1px solid #F1F5F9;display:flex;flex-wrap:wrap;gap:10px 26px;font-size:13px}
+.opts label{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.opts input{width:16px;height:16px;accent-color:var(--mint)}
+.opts .hint{color:#94A3B8}
+
+/* 표 */
+.rowhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+h2{font-size:17px;font-weight:800;margin:0}
+.btn{border:0;border-radius:12px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:all .2s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.btn:active{transform:scale(.96)}
+.btn-g{background:#F1F5F9;color:var(--ink)}
+.btn-m{background:var(--mint);color:#fff;box-shadow:0 6px 16px rgba(16,185,129,.3)}
+.scroll{overflow-x:auto}
+.verify{display:flex;gap:11px;align-items:flex-start;padding:14px 16px;border-radius:14px;margin-bottom:16px;
+  background:#FFFBEB;box-shadow:0 0 0 1px #FDE68A inset}
+.v-ico{font-size:17px;line-height:1.3;flex:0 0 auto}
+.verify b{display:block;font-size:13.5px;color:#92400E;font-weight:800;margin-bottom:3px}
+.verify span{font-size:12.5px;color:#B45309;line-height:1.6}
+table{width:100%;border-collapse:collapse;min-width:720px;font-size:14px}
+th{font-size:11px;letter-spacing:.05em;color:var(--sub);text-align:left;padding:6px 8px;font-weight:700}
+th.r{text-align:right}
+td{border-top:1px solid #F1F5F9;padding:2px}
+.cell{width:100%;border:0;background:transparent;padding:9px 8px;border-radius:8px;font-family:inherit;font-size:14px;
+  color:var(--ink);outline:none;transition:background .15s}
+.cell:focus{background:var(--mint-soft);box-shadow:0 0 0 2px rgba(16,185,129,.45) inset}
+.cell.num{text-align:right;font-variant-numeric:tabular-nums}
+.total{margin-top:20px;padding-top:18px;border-top:1px solid #F1F5F9;display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.total b{font-size:19px;color:var(--mint-dark)}
+
+/* 빈 상태 / 스켈레톤 */
+.empty{text-align:center;padding:46px 20px}
+.empty .ico{font-size:44px;margin-bottom:12px}
+.empty p{margin:0;font-weight:700;color:#475569}
+.empty span{font-size:13px;color:#94A3B8}
+.skel{height:38px;border-radius:10px;margin-bottom:8px;
+  background:linear-gradient(90deg,#EEF2F6 25%,#F8FAFC 37%,#EEF2F6 63%);background-size:400% 100%;animation:sh 1.2s infinite}
+@keyframes sh{0%{background-position:100% 50%}100%{background-position:0 50%}}
+.hide{display:none!important}
+
+/* ---- 접이식 안내 ---- */
+.howto{padding:0;overflow:hidden}
+.howto summary{display:flex;align-items:center;gap:11px;padding:20px 24px;cursor:pointer;list-style:none;
+  font-weight:800;font-size:15px;transition:background .2s}
+.howto summary::-webkit-details-marker{display:none}
+.howto summary:hover{background:var(--mint-soft)}
+.h-ico{width:32px;height:32px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+  font-size:15px;background:var(--mint-soft);flex:0 0 auto}
+.h-t{flex:1}
+.h-arrow{color:#94A3B8;font-size:13px;transition:transform .25s}
+.howto[open] .h-arrow{transform:rotate(180deg)}
+.howto[open] summary{border-bottom:1px solid #F1F5F9}
+.hsteps{margin:0;padding:18px 24px 4px 46px}
+.hsteps li{margin-bottom:14px}
+.hsteps li::marker{color:var(--mint);font-weight:800}
+.hsteps b{font-size:14px;font-weight:700}
+.hsteps p{margin:3px 0 0;font-size:13px;color:var(--sub);line-height:1.65}
+.shot{display:block;width:100%;max-width:640px;margin:10px 0 0;border-radius:10px;
+  box-shadow:0 0 0 1px var(--line),0 4px 12px rgba(15,23,42,.07)}
+.hnote{margin:0;padding:14px 24px 22px;font-size:12.5px;color:var(--sub);line-height:1.65}
+
+/* ---- Footer ---- */
+footer{padding:14px 0 44px;text-align:center}
+.ft-line{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:0}
+.ver{font-size:11px;font-weight:800;letter-spacing:.03em;padding:4px 10px;border-radius:999px;
+  background:var(--mint-soft);color:var(--mint-dark)}
+.upd,.copy,.sep{font-size:12px;color:#94A3B8;letter-spacing:.01em}
+.sep{color:#CBD5E1}
+
+/* 토스트 */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);padding:13px 22px;border-radius:14px;
+  background:#0F172A;color:#fff;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .3s;
+  box-shadow:0 10px 30px rgba(15,23,42,.25);max-width:88vw;text-align:center}
+@media(max-width:640px){
+  .card{padding:20px}
+  header{padding:22px 0 14px}
+  .hero{padding:34px 20px 30px;border-radius:22px}
+  h1{font-size:34px}
+  .tagline{font-size:13.5px}
+  .guide{padding:14px}
+  .arrow{display:none}
+  .step{width:100%;justify-content:flex-start}
+
+  /* 드롭 안내 문구 : 모바일은 '탭' 으로 */
+  .only-pc{display:none}
+  .only-mo{display:block}
+  #drop{padding:34px 16px}
+
+  /* 표를 카드형으로 : 가로 스크롤 없이 */
+  .scroll{overflow:visible}
+  table{min-width:0}
+  thead{display:none}
+  tbody,tr,td{display:block;width:auto}
+  tr{background:var(--bg);border-radius:14px;padding:8px 10px;margin-bottom:10px;position:relative}
+  td{border:0;padding:0}
+  td[data-l]{display:flex;align-items:center;gap:10px;padding:2px 0}
+  td[data-l]::before{content:attr(data-l);flex:0 0 62px;font-size:11px;font-weight:700;color:var(--sub)}
+  td[data-l="내용"]::before{color:var(--mint-dark)}
+  .cell{background:#fff;padding:11px 10px;font-size:15px}
+  .cell.num{text-align:left}
+  .delcell{position:absolute;top:6px;right:6px}
+  .icobtn{width:38px;height:38px;font-size:15px}
+  .rowhead .btn{flex:1}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- ================= Hero (프로그램명) ================= -->
+  <header>
+    <div class="hero">
+      <span class="chip">SchoolKit</span>
+      <h1>품목내역 메이커</h1>
+      <p class="tagline">견적서를 올리면 K-에듀파인 품의용<br>품목내역 엑셀이 뚝딱</p>
+    </div>
+  </header>
+
+  <!-- ================= 사용 방법 ================= -->
+  <section class="card guide">
+    <div class="steps">
+      <div class="step"><span class="stepno">1</span><b>파일 올리기</b></div>
+      <span class="arrow">›</span>
+      <div class="step"><span class="stepno">2</span><b>내용 확인·수정</b></div>
+      <span class="arrow">›</span>
+      <div class="step"><span class="stepno">3</span><b>엑셀 다운로드</b></div>
+      <span class="arrow">›</span>
+      <div class="step last"><span class="stepno">4</span><b>K-에듀파인 업로드</b></div>
+    </div>
+    <p class="guide-tip">K-에듀파인 품의 화면의 <b>품목내역</b> 오른쪽 <b>파일 ⬆</b> 버튼을 눌러 내려받은 xls를 올리면 끝!</p>
+  </section>
+
+  <!-- ================= Upload ================= -->
+  <section class="card">
+    <div id="status" class="load"><span class="dot"></span><span id="statusMsg">PDF·엑셀 엔진을 불러오는 중…</span></div>
+
+    <div id="drop" class="off">
+      <div class="dz-ico">📥</div>
+      <div class="dz-t only-pc">견적서 파일을 여기에 끌어다 놓으세요</div>
+      <div class="dz-s only-pc">PDF · 엑셀(견적서 출력) · 장바구니 캡처 이미지 모두 가능 · 여러 개 한꺼번에 OK</div>
+      <div class="dz-t only-mo">탭해서 견적서 파일 고르기</div>
+      <div class="dz-s only-mo">PDF · 엑셀 · 캡처 이미지를 여러 개 고를 수 있어요</div>
+      <input type="file" id="fileInput" accept=".pdf,.xls,.xlsx,.xlsm,.csv,.html,.htm,image/*" multiple class="hide">
+    </div>
+
+    <!-- 불러온 파일 목록 -->
+    <div id="fileList"></div>
+
+    <div class="opts">
+      <label><input type="checkbox" id="optSplitShip" checked>
+        <span>배송비를 품목 수로 나눠서 넣기 <span class="hint">(6,000원 ÷ 2개 = 3,000원 × 2)</span></span></label>
+      <label><input type="checkbox" id="optKeepSpace" checked><span>상품명 띄어쓰기 유지</span></label>
+    </div>
+  </section>
+
+  <!-- ================= Loading ================= -->
+  <section id="loading" class="card hide">
+    <div class="skel" style="width:180px;height:20px"></div>
+    <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+  </section>
+
+  <!-- ================= Result ================= -->
+  <section id="resultCard" class="card hide">
+    <div class="rowhead">
+      <div>
+        <h2>품목내역 미리보기</h2>
+        <p class="sub">칸을 눌러 바로 수정할 수 있어요</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="addRow" class="btn btn-g">행 추가</button>
+        <button id="download" class="btn btn-m">엑셀(.xls) 다운로드</button>
+      </div>
+    </div>
+    <div class="verify">
+      <span class="v-ico">⚠️</span>
+      <div><b>자동으로 읽어 들인 값입니다. 반드시 다시 한 번 확인해 주세요.</b>
+      <span>품목명 · 수량 · 예상단가가 견적서와 같은지 대조한 뒤 내려받으세요. 특히 이미지(OCR)로 읽은 자료는 오탈자가 생길 수 있습니다.</span></div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th style="width:42%">내용</th><th style="width:14%">규격</th><th style="width:10%">단위</th>
+          <th class="r" style="width:10%">수량</th><th class="r" style="width:16%">예상단가</th><th style="width:8%"></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="total"><span style="color:var(--sub)">합계 (수량 × 예상단가)</span><b id="grandTotal">0원</b></div>
+  </section>
+
+  <!-- ================= Empty ================= -->
+  <section id="emptyState" class="card empty">
+    <div class="ico">🗂️</div>
+    <p>아직 올린 견적서가 없어요</p>
+    <span>PDF · 엑셀 · 장바구니 캡처 이미지를 올려 보세요!</span>
+  </section>
+
+  <!-- ================= K-에듀파인 업로드 방법 (접이식) ================= -->
+  <details class="card howto">
+    <summary>
+      <span class="h-ico">📘</span>
+      <span class="h-t">K-에듀파인에 품목내역 엑셀 올리는 방법</span>
+      <span class="h-arrow">▾</span>
+    </summary>
+    <ol class="hsteps">
+      <li><b>품의등록 화면 열기</b>
+        <p>학교회계 &gt; 사업관리 &gt; 사업담당 &gt; 품의/정산 &gt; <b>품의등록</b> 으로 들어갑니다.</p></li>
+      <li><b>예산 먼저 선택</b>
+        <p>위쪽 <b>예산내역</b> 에서 <b>예산선택</b> 을 눌러 세부사업과 세목을 고릅니다. 예산을 고르지 않으면 품목을 올려도 담기지 않습니다.</p></li>
+      <li><b>품목내역의 [파일 ⬆] 클릭</b>
+        <p>아래쪽 <b>품목내역</b> 줄 오른쪽에 <b>파일</b> 버튼이 두 개 있습니다. 그중 <b>왼쪽(올리기)</b> 버튼을 누르면 엑셀업로드 창이 뜹니다.</p>
+        <img class="shot" alt="품목내역 줄 오른쪽의 파일 올리기 버튼 위치" src="data:image/png;base64,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"></li>
+      <li><b>창 안에서 다시 [파일 ⬆] 클릭</b>
+        <p>엑셀업로드 창 오른쪽 위의 <b>파일</b> 버튼을 눌러 내려받은 <b>품목내역(통합).xls</b> 를 고릅니다.</p>
+        <img class="shot" alt="엑셀업로드 창의 파일 버튼 위치" src="data:image/png;base64,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"></li>
+      <li><b>내용 확인 후 [확인]</b>
+        <p>창 안 표에 내용·규격·단위·수량·예상단가가 뜨는지 보고 <b>확인</b> 을 누르면 품목내역에 채워집니다.</p></li>
+      <li><b>요구금액 대조</b>
+        <p>맨 아래 <b>요구금액</b> 이 견적서 총액과 맞는지, <b>예산잔액</b> 을 넘지 않는지 확인하면 끝입니다.</p></li>
+    </ol>
+    <p class="hnote">💡 창이 안 뜨면 브라우저의 팝업 차단을 풀어 주세요. 표가 비어 보이면 파일이 아니라 <b>예산 미선택</b> 이 원인인 경우가 많습니다.</p>
+  </details>
+
+  <!-- ================= Footer ================= -->
+  <footer>
+    <p class="ft-line">
+      <span class="ver">v1.1</span>
+      <span class="upd">Updated Aug 18, 2026</span>
+      <span class="sep">·</span>
+      <span class="copy">ⓒ snackscience. All rights reserved.</span>
+    </p>
+  </footer>
+</div>
+
+<div id="toast"></div>
+
+<!-- ================= Script ================= -->
+<script>
+"use strict";
+function $(id){ return document.getElementById(id); }
+
+function setStatus(kind, msg){
+  var s = $('status');
+  s.className = kind;
+  $('statusMsg').textContent = msg;
+  var d = s.querySelector('.dot');
+  if (d) d.style.display = (kind === 'load') ? '' : 'none';
+}
+function toast(msg, bad){
+  var t = $('toast');
+  t.textContent = msg;
+  t.style.background = bad ? '#DC2626' : '#0F172A';
+  t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(-6px)';
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.style.opacity = '0'; t.style.transform = 'translateX(-50%)'; }, 2600);
+}
+/* 예기치 못한 오류도 화면에 보여 주기 */
+window.addEventListener('error', function(e){ setStatus('err', '오류: ' + (e.message || e)); });
+
+/* =========================================================
+   0. 라이브러리 로더 (CDN 3중 대체)
+   ========================================================= */
+var PDF_CDN = [
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+  'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js'
+];
+var WORKER_CDN = [
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js',
+  'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+];
+var XLSX_CDN = [
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+  'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+];
+
+function loadScript(url){
+  return new Promise(function(res, rej){
+    var s = document.createElement('script');
+    s.src = url; s.async = true;
+    s.onload = function(){ res(url); };
+    s.onerror = function(){ rej(new Error(url)); };
+    document.head.appendChild(s);
+    setTimeout(function(){ rej(new Error('timeout ' + url)); }, 20000);
+  });
+}
+async function loadAny(urls, check){
+  if (check()) return true;
+  for (var i = 0; i < urls.length; i++){
+    try { await loadScript(urls[i]); if (check()) return true; }
+    catch (e) { /* 다음 CDN 시도 */ }
+  }
+  return false;
+}
+async function setupWorker(){
+  for (var i = 0; i < WORKER_CDN.length; i++){
+    try {
+      var r = await fetch(WORKER_CDN[i]);
+      if (!r.ok) continue;
+      var txt = await r.text();
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        URL.createObjectURL(new Blob([txt], {type:'application/javascript'}));
+      return true;
+    } catch (e) { /* 다음 CDN */ }
+  }
+  try {   // 마지막 수단 : importScripts 래퍼
+    var b = new Blob(["importScripts('" + WORKER_CDN[0] + "');"], {type:'application/javascript'});
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(b);
+    return true;
+  } catch (e) { return false; }
+}
+
+var READY = false;
+(async function boot(){
+  var okPdf = await loadAny(PDF_CDN, function(){ return typeof pdfjsLib !== 'undefined'; });
+  if (!okPdf){ setStatus('err', 'PDF 엔진을 불러오지 못했습니다. 인터넷 연결(또는 학교망 차단)을 확인해 주세요.'); return; }
+  await setupWorker();
+  var okXlsx = await loadAny(XLSX_CDN, function(){ return typeof XLSX !== 'undefined'; });
+  if (!okXlsx){ setStatus('err', '엑셀 엔진을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
+  READY = true;
+  $('drop').classList.remove('off');
+  setStatus('ok', '준비 완료 — 견적서를 올려 주세요');
+})();
+
+/* =========================================================
+   1. 견적서 파서
+   ========================================================= */
+var Y_TOL = 1.5, BAND_GAP = 15, RUN_GAP = 4.0, SPACE_GAP = 0.5;
+
+function num(s){
+  var m = String(s).replace(/[^\d.,-]/g, '').replace(/,/g, '');
+  if (!/\d/.test(m)) return null;
+  var v = parseFloat(m); return isNaN(v) ? null : v;
+}
+function isMoney(s){ s = s.trim(); return /^-?\d[\d,]*\s*원$/.test(s) || /^-?\d[\d,]*$/.test(s); }
+function hasHangul(c){ return /[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(c); }
+function isAscii(c){ return /[A-Za-z0-9]/.test(c); }
+
+/* 글자 → 같은 baseline(줄) → 덩어리(run) */
+function buildRuns(items){
+  var glyphs = items.filter(function(i){ return i.str && i.str.trim() !== ''; })
+                    .map(function(i){ return {s:i.str, x:i.x, y:i.y, w:i.w}; });
+  glyphs.sort(function(a, b){ return b.y - a.y || a.x - b.x; });
+
+  var lines = [];
+  glyphs.forEach(function(g){
+    var last = lines[lines.length - 1];
+    if (last && Math.abs(last.y - g.y) <= Y_TOL) last.g.push(g);
+    else lines.push({y:g.y, g:[g]});
+  });
+
+  var runs = [];
+  lines.forEach(function(ln){
+    ln.g.sort(function(a, b){ return a.x - b.x; });
+    var cur = null;
+    ln.g.forEach(function(g){
+      if (cur){
+        var gap = g.x - cur.x1;
+        if (gap < RUN_GAP){
+          cur.text += (gap > SPACE_GAP ? ' ' : '') + g.s;
+          cur.x1 = Math.max(cur.x1, g.x + g.w);
+          return;
+        }
+        runs.push(cur);
+      }
+      cur = {text:g.s, x0:g.x, x1:g.x + g.w, y:ln.y};
+    });
+    if (cur) runs.push(cur);
+  });
+  runs.forEach(function(r){ r.text = r.text.replace(/\s+/g, ' ').trim(); });
+  return runs.filter(function(r){ return r.text !== ''; });
+}
+
+/* 덩어리 → 표의 한 행(band) */
+function buildBands(runs){
+  var ys = runs.map(function(r){ return r.y; })
+               .filter(function(v, i, a){ return a.indexOf(v) === i; })
+               .sort(function(a, b){ return b - a; });
+  var bands = [], cur = null;
+  ys.forEach(function(y){
+    if (cur && cur.yMin - y <= BAND_GAP){ cur.ys.push(y); cur.yMin = y; }
+    else { cur = {ys:[y], yMin:y}; bands.push(cur); }
+  });
+  return bands.map(function(b){
+    return { runs: runs.filter(function(r){ return b.ys.indexOf(r.y) >= 0; })
+                       .sort(function(p, q){ return q.y - p.y || p.x0 - q.x0; }) };
+  });
+}
+
+/* 표 머리글 모두 찾기 (2페이지 이상이면 쪽마다 머리글이 반복됨) */
+function findHeaders(bands){
+  var out = [];
+  for (var i = 0; i < bands.length; i++){
+    var cols = bands[i].runs.map(function(r){
+      return {label:r.text.replace(/\s/g, ''), x0:r.x0, x1:r.x1};
+    }).sort(function(a, b){ return a.x0 - b.x0; });
+
+    var merged = [];
+    cols.forEach(function(c){
+      var last = merged[merged.length - 1];
+      if (last && c.x0 < last.x1 + 2){
+        last.label += c.label;
+        last.x0 = Math.min(last.x0, c.x0);
+        last.x1 = Math.max(last.x1, c.x1);
+      } else merged.push({label:c.label, x0:c.x0, x1:c.x1});
+    });
+    var t = merged.map(function(c){ return c.label; }).join('|');
+    if (/수량/.test(t) && /(공급합계|금액|공급가액|판매가)/.test(t)) out.push({index:i, cols:merged});
+  }
+  return out;
+}
+
+/* 덩어리를 열에 배정 (겹침 우선 → 최근접, 2패스) */
+function assign(runs, cols){
+  var range = cols.map(function(c){ return {x0:c.x0, x1:c.x1}; });
+  var out = cols.map(function(){ return []; });
+  var pending = [];
+  function overlapIdx(r){
+    var best = -1, bestOv = 0;
+    range.forEach(function(c, i){
+      var ov = Math.min(r.x1, c.x1) - Math.max(r.x0, c.x0);
+      if (ov > 0 && ov > bestOv){ bestOv = ov; best = i; }
+    });
+    return best;
+  }
+  runs.forEach(function(r){
+    var i = overlapIdx(r);
+    if (i >= 0){
+      out[i].push(r);
+      range[i].x0 = Math.min(range[i].x0, r.x0);
+      range[i].x1 = Math.max(range[i].x1, r.x1);
+    } else pending.push(r);
+  });
+  pending.forEach(function(r){
+    var i = overlapIdx(r);
+    if (i < 0){
+      var c = (r.x0 + r.x1) / 2, bd = Infinity;
+      range.forEach(function(rg, k){
+        var d = Math.abs(c - (rg.x0 + rg.x1) / 2);
+        if (d < bd){ bd = d; i = k; }
+      });
+    }
+    if (i >= 0) out[i].push(r);
+  });
+  out.forEach(function(a){ a.sort(function(p, q){ return q.y - p.y || p.x0 - q.x0; }); });
+  return out;
+}
+
+/* 줄바꿈된 상품명 잇기 (한글↔영문 경계에만 공백) */
+function joinName(parts){
+  var s = '';
+  parts.forEach(function(p){
+    var t = p.trim(); if (!t) return;
+    if (!s){ s = t; return; }
+    var a = s[s.length - 1], b = t[0];
+    var sp = (hasHangul(a) && isAscii(b)) || (isAscii(a) && hasHangul(b));
+    s += (sp ? ' ' : '') + t;
+  });
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+function parseQuote(items, fileName){
+  var runs = buildRuns(items);
+  var bands = buildBands(runs);
+  var flat = runs.map(function(r){ return r.text.replace(/\s/g, ''); }).join(' ');
+
+  var vendor = '기타';
+  if (/지마켓|G마켓|gmarket/i.test(flat)) vendor = 'G마켓';
+  else if (/십일번가|11번가|11st/i.test(flat)) vendor = '11번가';
+  else if (/쿠팡/.test(flat)) vendor = '쿠팡';
+  else if (/스마트스토어|네이버/.test(flat)) vendor = '네이버';
+  else if (/옥션|auction/i.test(flat)) vendor = '옥션';
+  else if (/인터파크/.test(flat)) vendor = '인터파크';
+
+  var res = {fileName:fileName, vendor:vendor, items:[], shipping:0, warnings:[]};
+  var headers = findHeaders(bands);
+  if (!headers.length){ res.warnings.push('표 머리글(수량/금액)을 찾지 못했습니다'); return res; }
+
+  var badCols = 0;
+  headers.forEach(function(header, hi){
+    var stop = (hi + 1 < headers.length) ? headers[hi + 1].index : bands.length;
+    var cols = header.cols;
+    var nameIdx = -1, qtyIdx = -1, moneyIdxs = [];
+    cols.forEach(function(c, i){
+      if (nameIdx < 0 && /상품명|품명|내용|품목/.test(c.label)) nameIdx = i;
+      if (qtyIdx < 0 && /수량/.test(c.label)) qtyIdx = i;
+      if (/금액|가액|합계|판매가|세액|단가/.test(c.label) && !/할인금액/.test(c.label)) moneyIdxs.push(i);
+    });
+    var amtIdx = moneyIdxs.length ? moneyIdxs[moneyIdxs.length - 1] : -1;
+    if (nameIdx < 0 || qtyIdx < 0 || amtIdx < 0){ badCols++; return; }
+
+    for (var bi = header.index + 1; bi < stop; bi++){
+      var cells = assign(bands[bi].runs, cols);
+      var parts = cells[nameIdx].map(function(r){ return r.text; });
+      var raw = parts.join('').replace(/\s/g, '');
+      if (/^(합계|소계|총합계|총계|총구매금액)$/.test(raw)) break;   // 이 표는 여기까지
+      if (/^(상품명|품명|내용|품목)/.test(raw)) continue;            // 반복된 머리글
+
+      var qty = num(cells[qtyIdx].map(function(r){ return r.text; }).join(''));
+      var amt = num(cells[amtIdx].map(function(r){ return r.text; }).join(''));
+      if (qty === null || amt === null || !raw) continue;
+
+      res.items.push({
+        name: joinName(parts), qty: qty, total: amt,
+        unit: qty ? Math.round((amt / qty) * 100) / 100 : amt
+      });
+    }
+  });
+  if (badCols === headers.length) res.warnings.push('상품명/수량/금액 열을 인식하지 못했습니다');
+
+  /* 배송비 : '배송비', '배송비(선결제)', '착불배송비' → 오른쪽 첫 금액 */
+  var shipRe = /^[가-힣]{0,4}배송비(\([^)]*\))?$/;
+  bands.forEach(function(band){
+    var rs = band.runs;
+    rs.forEach(function(r){
+      if (!shipRe.test(r.text.replace(/\s/g, ''))) return;
+      var best = null;
+      rs.forEach(function(r2){
+        if (r2.x0 <= r.x1) return;
+        if (!isMoney(r2.text.replace(/\s/g, ''))) return;
+        if (!best || r2.x0 < best.x0) best = r2;
+      });
+      if (best) res.shipping += num(best.text) || 0;
+    });
+  });
+
+  if (!res.items.length) res.warnings.push('품목을 찾지 못했습니다');
+  return res;
+}
+
+/* =========================================================
+   2. 파일 읽기 : PDF / 엑셀·HTML / 이미지(OCR)
+   ========================================================= */
+
+/* ---- 2-1. PDF ---- */
+async function readPdf(file){
+  var buf = await file.arrayBuffer();
+  var doc = await pdfjsLib.getDocument({data:buf}).promise;
+  var items = [];
+  for (var p = 1; p <= doc.numPages; p++){
+    var page = await doc.getPage(p);
+    var tc = await page.getTextContent();
+    var off = (p - 1) * 100000;                    // 페이지마다 y 좌표 분리
+    items = items.concat(tc.items.map(function(i){
+      return {str:i.str, x:i.transform[4], y:i.transform[5] - off, w:i.width};
+    }));
+  }
+  var r = parseQuote(items, file.name);
+  r.kind = 'PDF';
+  return r;
+}
+
+/* ---- 2-2. 표(그리드) 공용 파서 : 엑셀 · HTML 견적서 ---- */
+function parseGrid(grids, fileName){
+  var flat = [];
+  grids.forEach(function(g){ g.forEach(function(row){ flat.push(row.join(' ')); }); });
+  var all = flat.join(' ');
+
+  var vendor = '기타';
+  if (/지마켓|G마켓|gmarket/i.test(all)) vendor = 'G마켓';
+  else if (/십일번가|11번가|11st/i.test(all)) vendor = '11번가';
+  else if (/쿠팡/.test(all)) vendor = '쿠팡';
+  else if (/스마트스토어|네이버/.test(all)) vendor = '네이버';
+  else if (/옥션|auction/i.test(all)) vendor = '옥션';
+  else if (/인터파크/.test(all)) vendor = '인터파크';
+
+  var res = {fileName:fileName, vendor:vendor, items:[], shipping:0, warnings:[], kind:'엑셀'};
+
+  /* 머리글이 있는 표 모두 찾기 (여러 시트 · 2페이지 반복 머리글 대응) */
+  var hits = [];
+  grids.forEach(function(g){
+    for (var r = 0; r < g.length; r++){
+      var t = g[r].join('|').replace(/\s/g, '');
+      if (/수량/.test(t) && /(공급합계|금액|공급가액|판매가)/.test(t)) hits.push({grid:g, row:r});
+    }
+  });
+  if (!hits.length){ res.warnings.push('표 머리글(수량/금액)을 찾지 못했습니다'); }
+  else {
+    var badCols = 0;
+    hits.forEach(function(hit, hi){
+      var stop = (hi + 1 < hits.length && hits[hi + 1].grid === hit.grid) ? hits[hi + 1].row : hit.grid.length;
+      var head = hit.grid[hit.row].map(function(c){ return String(c).replace(/\s/g, ''); });
+      var nameIdx = -1, qtyIdx = -1, moneyIdxs = [];
+      head.forEach(function(label, i){
+        if (nameIdx < 0 && /상품명|품명|내용|품목/.test(label)) nameIdx = i;
+        if (qtyIdx < 0 && /수량/.test(label)) qtyIdx = i;
+        if (/금액|가액|합계|판매가|세액|단가/.test(label) && !/할인금액/.test(label)) moneyIdxs.push(i);
+      });
+      var amtIdx = moneyIdxs.length ? moneyIdxs[moneyIdxs.length - 1] : -1;
+      if (nameIdx < 0 || qtyIdx < 0 || amtIdx < 0){ badCols++; return; }
+
+      for (var r2 = hit.row + 1; r2 < stop; r2++){
+        var row = hit.grid[r2].map(function(c){ return String(c == null ? '' : c).trim(); });
+        if (row.some(function(c){ return /^(합계|소계|총합계|총계)$/.test(c.replace(/\s/g, '')); })) break;
+
+        var nm = row[nameIdx] || '';
+        var qty = num(row[qtyIdx] || '');
+        var amt = num(row[amtIdx] || '');
+
+        if (nm && qty === null && amt === null && res.items.length){
+          /* 옵션 등 이어지는 줄 → 앞 품목 이름에 붙임 */
+          res.items[res.items.length - 1].name = joinName([res.items[res.items.length - 1].name, nm]);
+          continue;
+        }
+        if (!nm || qty === null || amt === null) continue;
+        res.items.push({
+          name: nm.replace(/\s+/g, ' ').trim(), qty: qty, total: amt,
+          unit: qty ? Math.round((amt / qty) * 100) / 100 : amt
+        });
+      }
+    });
+    if (badCols === hits.length) res.warnings.push('상품명/수량/금액 열을 인식하지 못했습니다');
+  }
+
+  /* 배송비 : '배송비' 칸 바로 오른쪽 금액 */
+  var shipRe = /^[가-힣]{0,4}배송비(\([^)]*\))?$/;
+  grids.forEach(function(g){
+    g.forEach(function(row){
+      for (var c = 0; c < row.length; c++){
+        if (!shipRe.test(String(row[c] || '').replace(/\s/g, ''))) continue;
+        for (var k = c + 1; k < row.length; k++){
+          var v = String(row[k] || '').replace(/\s/g, '');
+          if (!v) continue;
+          if (isMoney(v)) res.shipping += num(v) || 0;
+          break;
+        }
+      }
+    });
+  });
+
+  if (!res.items.length && !res.warnings.length) res.warnings.push('품목을 찾지 못했습니다');
+  return res;
+}
+
+/* HTML 표 → 그리드 (rowspan/colspan 은 첫 칸에만 값, 나머지는 빈칸) */
+function tableToGrid(table){
+  var grid = [];
+  var rows = table.rows;
+  for (var r = 0; r < rows.length; r++){
+    if (!grid[r]) grid[r] = [];
+    var c = 0;
+    for (var i = 0; i < rows[r].cells.length; i++){
+      var td = rows[r].cells[i];
+      while (grid[r][c] !== undefined) c++;
+      var rs = td.rowSpan || 1, cs = td.colSpan || 1;
+      var txt = (td.textContent || '').replace(/\s+/g, ' ').trim();
+      for (var a = 0; a < rs; a++){
+        if (!grid[r + a]) grid[r + a] = [];
+        for (var b = 0; b < cs; b++) grid[r + a][c + b] = (a === 0 && b === 0) ? txt : '';
+      }
+      c += cs;
+    }
+  }
+  return grid.map(function(row){
+    for (var k = 0; k < row.length; k++) if (row[k] === undefined) row[k] = '';
+    return row;
+  });
+}
+
+async function readSheet(file){
+  var buf = await file.arrayBuffer();
+  var head = '';
+  try { head = new TextDecoder('utf-8').decode(buf.slice(0, 600)).toLowerCase(); } catch(e){}
+
+  /* 오픈마켓 '견적서 출력' xls 는 사실 HTML 인 경우가 많음 */
+  if (/<table|<html|<div|<!doctype/.test(head)){
+    var txt = '';
+    try { txt = new TextDecoder('utf-8').decode(buf); } catch(e){}
+    if (!txt || txt.indexOf('\uFFFD') >= 0){
+      try { txt = new TextDecoder('euc-kr').decode(buf); } catch(e){}
+    }
+    var doc = new DOMParser().parseFromString(txt, 'text/html');
+    var grids = Array.prototype.map.call(doc.querySelectorAll('table'), tableToGrid);
+    var r = parseGrid(grids, file.name);
+    r.kind = '엑셀';
+    return r;
+  }
+
+  /* 진짜 xls / xlsx / csv */
+  var wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+  var gs = wb.SheetNames.map(function(n){
+    return XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:false, defval:''});
+  });
+  return parseGrid(gs, file.name);
+}
+
+/* ---- 2-3. 이미지 : OCR (초안) ---- */
+var TESS_CDN = [
+  'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+  'https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js'
+];
+async function ensureTesseract(){
+  if (typeof Tesseract !== 'undefined') return true;
+  setStatus('load', '글자 인식 엔진을 내려받는 중… (처음 한 번만, 조금 걸려요)');
+  var ok = await loadAny(TESS_CDN, function(){ return typeof Tesseract !== 'undefined'; });
+  setStatus(ok ? 'ok' : 'err', ok ? '준비 완료 — 견적서를 올려 주세요' : '글자 인식 엔진을 불러오지 못했습니다');
+  return ok;
+}
+
+/* OCR 결과에서 낱말 목록 뽑기 (버전별 구조 차이 흡수) */
+function collectWords(data){
+  if (data.words && data.words.length) return data.words;
+  var out = [];
+  (data.blocks || []).forEach(function(b){
+    (b.paragraphs || []).forEach(function(p){
+      (p.lines || []).forEach(function(l){ (l.words || []).forEach(function(w){ out.push(w); }); });
+    });
+  });
+  return out;
+}
+
+function parseOcrWords(words, fileName){
+  var res = {fileName:fileName, vendor:'이미지', items:[], shipping:0, warnings:[], kind:'이미지'};
+  var ws = words.filter(function(w){
+      if (!w.text || w.text.trim() === '') return false;
+      if (w.confidence === undefined || w.confidence > 30) return true;
+      return /[가-힣0-9]/.test(w.text);          // 확신도가 낮아도 한글·숫자면 살림
+    }).map(function(w){
+      return {t:w.text.trim(), x0:w.bbox.x0, x1:w.bbox.x1,
+              yc:(w.bbox.y0 + w.bbox.y1) / 2, h:w.bbox.y1 - w.bbox.y0};
+    });
+  if (!ws.length){ res.warnings.push('글자를 읽지 못했습니다'); return res; }
+
+  var moneyRe = /^-?\d[\d,.]*원$/;
+  var mNum = function(s){ return parseInt(String(s).replace(/[^\d]/g, ''), 10); };  // 3.900 · 3,900 모두 3900
+  var kor = function(s){ return (s.match(/[가-힣A-Za-z]/g) || []).length; };
+
+  /* ① 줄 묶기 (첫 낱말 기준 고정 허용오차) */
+  ws.sort(function(a, b){ return a.yc - b.yc || a.x0 - b.x0; });
+  var lines = [];
+  ws.forEach(function(w){
+    var L = lines[lines.length - 1];
+    if (L && Math.abs(w.yc - L.y0) <= Math.max(7, w.h * 0.5)) L.w.push(w);
+    else lines.push({y0:w.yc, w:[w]});
+  });
+
+  /* ② 줄 안에서 가로 간격이 크면 조각(segment) 으로 나누기 */
+  lines.forEach(function(L){
+    L.w.sort(function(a, b){ return a.x0 - b.x0; });
+    L.seg = [[L.w[0]]];
+    for (var i = 1; i < L.w.length; i++){
+      var prev = L.seg[L.seg.length - 1];
+      if (L.w[i].x0 - prev[prev.length - 1].x1 > 70) L.seg.push([]);
+      L.seg[L.seg.length - 1].push(L.w[i]);
+    }
+  });
+
+  function text(list){
+    var s = '';
+    list.forEach(function(w, i){
+      if (i === 0){ s = w.t; return; }
+      var gap = w.x0 - list[i-1].x1;
+      s += (gap > Math.max(4, w.h * 0.35) ? ' ' : '') + w.t;   // 한글 음절 분리 보정
+    });
+    return s.replace(/\s+/g, ' ').trim();
+  }
+  function trimTail(list){       // 끝쪽의 글자 아닌 조각(버튼·아이콘 오인식) 잘라내기
+    var e = list.length;
+    while (e > 0 && kor(list[e-1].t) === 0) e--;
+    return list.slice(0, e);
+  }
+
+  /* ③ 배송비 : '배송비' 바로 뒤 금액 */
+  lines.forEach(function(L){
+    L.seg.forEach(function(list){
+      for (var i = 0; i < list.length - 1; i++){
+        if (!/^[가-힣]{0,4}배송비$/.test(list[i].t)) continue;
+        var a = list[i+1].t, b = list[i+2] ? (list[i+1].t + list[i+2].t) : '';
+        if (moneyRe.test(a)) res.shipping += mNum(a) || 0;
+        else if (moneyRe.test(b)) res.shipping += mNum(b) || 0;
+      }
+    });
+  });
+
+  /* ④ 품목 뽑기 */
+  var SUMMARY = /무료배송|배송비|할인금액|주문금액|상품금액|결제금액|상품수|적립혜택|구매하기|합계/;
+  var lastX0 = null;
+
+  lines.forEach(function(L){
+    if (!L.seg.length) return;
+    var full = L.seg.map(text).join(' ');
+
+    /* 금액 조각 모으기 */
+    var moneys = [];
+    L.seg.forEach(function(s){
+      for (var i = 0; i < s.length; i++){
+        var one = s[i].t, two = s[i+1] ? (s[i].t + s[i+1].t) : '';
+        if (moneyRe.test(one) && mNum(one) >= 100) moneys.push({v:mNum(one), x:s[i].x0});
+        else if (moneyRe.test(two) && mNum(two) >= 100){ moneys.push({v:mNum(two), x:s[i].x0}); i++; }
+      }
+    });
+
+    if (SUMMARY.test(full.replace(/\s/g, '')) || moneys.length >= 2) return;   // 요약 줄은 건너뜀
+
+    /* 이름 조각 : 한글·영문이 2자 이상인 첫 조각 */
+    var nameSeg = null;
+    for (var i = 0; i < L.seg.length; i++){ if (kor(text(L.seg[i])) >= 2){ nameSeg = L.seg[i]; break; } }
+    if (!nameSeg) return;
+
+    if (!moneys.length){
+      /* 금액 없는 줄 : 이름 시작 위치가 같으면 앞 품목의 이어지는 줄로 봄 */
+      if (res.items.length && lastX0 !== null && Math.abs(nameSeg[0].x0 - lastX0) <= 40){
+        res.items[res.items.length - 1].name += ' ' + text(trimTail(nameSeg));
+      }
+      return;
+    }
+    var money = moneys[moneys.length - 1];
+    if (money.x < nameSeg[0].x0) return;
+
+    /* 수량 : 이름 뒤에 양옆이 떨어진 채 홀로 있는 1~2자리 정수 (수량 조절 버튼) */
+    var qty = 1, cut = nameSeg.length;
+    for (var q = 1; q < nameSeg.length; q++){
+      if (!/^\d{1,2}$/.test(nameSeg[q].t)) continue;
+      if (kor(text(nameSeg.slice(0, q))) < 2) continue;
+      var gapL = nameSeg[q].x0 - nameSeg[q-1].x1;
+      var gapR = nameSeg[q+1] ? (nameSeg[q+1].x0 - nameSeg[q].x1) : 99;
+      var need = Math.max(8, nameSeg[q].h * 0.6);
+      if (gapL < need || gapR < need) continue;   // '1단' 처럼 붙어 있는 숫자는 수량이 아님
+      qty = parseInt(nameSeg[q].t, 10); cut = q; break;
+    }
+    var nm = text(trimTail(nameSeg.slice(0, cut)));
+    if (kor(nm) < 2) return;
+
+    res.items.push({name:nm, qty:qty, total:money.v,
+                    unit: qty ? Math.round(money.v / qty * 100) / 100 : money.v});
+    lastX0 = nameSeg[0].x0;
+  });
+
+  res.items.forEach(function(it){ it.name = it.name.replace(/\s+/g, ' ').trim(); });
+  if (!res.items.length) res.warnings.push('품목을 찾지 못했습니다');
+  else res.warnings.push('OCR 초안이니 내용을 꼭 확인하세요');
+  return res;
+}
+
+async function readImage(file, onProgress){
+  if (!(await ensureTesseract())) throw new Error('OCR 엔진 로드 실패');
+
+  /* 언어 데이터는 tesseract 스크립트와 같은 CDN(jsdelivr) 에서 받음 (1.5MB).
+     기본 주소(tessdata.projectnaptha.com) 는 기관망에서 막히는 경우가 있어 우선순위를 뒤로 둠 */
+  var LANG_PATHS = [
+    'https://cdn.jsdelivr.net/npm/@tesseract.js-data/kor@1.0.0/4.0.0_best_int',
+    'https://unpkg.com/@tesseract.js-data/kor@1.0.0/4.0.0_best_int',
+    'https://tessdata.projectnaptha.com/4.0.0'
+  ];
+  var STATUS = {
+    'loading tesseract core': '엔진 준비 중',
+    'loading language traineddata': '한글 데이터 내려받는 중',
+    'initializing api': '준비 중',
+    'recognizing text': '글자 인식 중'
+  };
+
+  var lastErr = null;
+  for (var i = 0; i < LANG_PATHS.length; i++){
+    var worker = null;
+    try {
+      worker = await Tesseract.createWorker('kor', 1, {
+        langPath: LANG_PATHS[i],
+        gzip: true,
+        logger: function(m){
+          if (!onProgress) return;
+          onProgress(STATUS[m.status] || '처리 중', Math.round((m.progress || 0) * 100));
+        }
+      });
+      var out = await worker.recognize(file, {}, {blocks:true, text:true});
+      await worker.terminate();
+      return parseOcrWords(collectWords(out.data), file.name);
+    } catch (e){
+      lastErr = e;
+      try { if (worker) await worker.terminate(); } catch (e2){}
+    }
+  }
+  throw new Error('글자 인식 실패 — ' + ((lastErr && lastErr.message) || '언어 데이터를 못 받았습니다'));
+}
+
+/* ---- 2-4. 확장자로 분기 ---- */
+function readAny(file, onProgress){
+  var n = file.name.toLowerCase();
+  if (/\.pdf$/.test(n)) return readPdf(file);
+  if (/\.(png|jpe?g|webp|gif|bmp)$/.test(n)) return readImage(file, onProgress);
+  if (/\.(xls|xlsx|xlsm|csv|html?)$/.test(n)) return readSheet(file);
+  return readSheet(file);
+}
+
+/* =========================================================
+   3. 상태 & 렌더링
+   ========================================================= */
+var state = { quotes: [], rows: [] };
+function won(n){ return (Math.round(n * 100) / 100).toLocaleString('ko-KR'); }
+function esc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+/* 파일 목록 : 읽는 중 / 완료 / 실패 모두 표시 */
+function renderFiles(){
+  var box = $('fileList');
+  box.innerHTML = '';
+  state.quotes.forEach(function(q, idx){
+    var cls, mark, meta;
+    if (q.status === 'reading'){
+      cls = 'b-run'; mark = '…';
+      meta = q.stage ? (q.stage + '… ' + (q.progress || 0) + '%') : '읽는 중…';
+    } else if (q.status === 'error'){
+      cls = 'b-err'; mark = '!'; meta = '<span class="warn">읽기 실패 — ' + esc(q.error || '') + '</span>';
+    } else if (q.warnings.length){
+      cls = 'b-warn'; mark = '!';
+      meta = q.vendor + ' · 품목 ' + q.items.length + '건 · 배송비 ' + won(q.shipping) +
+             '원 <span class="warn">· ' + esc(q.warnings.join(', ')) + '</span>';
+    } else {
+      cls = 'b-ok'; mark = '✓';
+      meta = q.vendor + ' · 품목 ' + q.items.length + '건 · 배송비 ' + won(q.shipping) + '원';
+    }
+    var kind = q.kind ? '<span class="kind">' + esc(q.kind) + '</span>' : '';
+    var el = document.createElement('div');
+    el.className = 'file';
+    el.innerHTML =
+      '<span class="badge ' + cls + '">' + mark + '</span>' +
+      '<div style="min-width:0;flex:1"><div class="f-name">' + kind + esc(q.fileName) + '</div>' +
+      '<div class="f-meta">' + meta + '</div></div>' +
+      '<button class="icobtn" data-up="' + idx + '" title="위로">▲</button>' +
+      '<button class="icobtn" data-down="' + idx + '" title="아래로">▼</button>' +
+      '<button class="icobtn del" data-del="' + idx + '" title="삭제">✕</button>';
+    box.appendChild(el);
+  });
+}
+
+/* 파싱 결과 → 표 행 */
+function rebuildRows(){
+  var split = $('optSplitShip').checked;
+  var keep = $('optKeepSpace').checked;
+  var rows = [];
+  state.quotes.forEach(function(q){
+    if (q.status !== 'done') return;
+    q.items.forEach(function(it){
+      rows.push({ name: keep ? it.name : it.name.replace(/\s/g, ''),
+                  spec:'', unit:'', qty:it.qty, price:it.unit });
+    });
+    if (q.shipping > 0){
+      var n = q.items.length;
+      var ok = split && n > 0 && Math.round(q.shipping / n * 100) % 100 === 0;
+      rows.push({ name:'배송비', spec:'', unit:'', qty: ok ? n : 1, price: ok ? q.shipping / n : q.shipping });
+    }
+  });
+  state.rows = rows;
+  renderTable();
+}
+
+function renderTable(){
+  var tb = $('tbody');
+  tb.innerHTML = '';
+  var total = 0;
+  state.rows.forEach(function(r, i){
+    total += (Number(r.qty) || 0) * (Number(r.price) || 0);
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td data-l="내용"><input class="cell" data-i="' + i + '" data-k="name" value="' + esc(r.name) + '"></td>' +
+      '<td data-l="규격"><input class="cell" data-i="' + i + '" data-k="spec" value="' + esc(r.spec || '') + '"></td>' +
+      '<td data-l="단위"><input class="cell" data-i="' + i + '" data-k="unit" value="' + esc(r.unit || '') + '"></td>' +
+      '<td data-l="수량"><input class="cell num" data-i="' + i + '" data-k="qty" inputmode="decimal" value="' + r.qty + '"></td>' +
+      '<td data-l="예상단가"><input class="cell num" data-i="' + i + '" data-k="price" inputmode="decimal" value="' + r.price + '"></td>' +
+      '<td class="delcell" style="text-align:right"><button class="icobtn del" data-row-del="' + i + '">✕</button></td>';
+    tb.appendChild(tr);
+  });
+  $('grandTotal').textContent = won(total) + '원';
+  $('resultCard').classList.toggle('hide', state.rows.length === 0);
+  $('emptyState').classList.toggle('hide', state.quotes.length > 0);
+}
+
+/* =========================================================
+   4. 이벤트
+   ========================================================= */
+var drop = $('drop'), fileInput = $('fileInput');
+
+drop.addEventListener('click', function(){ if (READY) fileInput.click(); });
+['dragenter', 'dragover'].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('on'); });
+});
+['dragleave', 'drop'].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('on'); });
+});
+drop.addEventListener('drop', function(e){ e.preventDefault(); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', function(e){ handleFiles(e.target.files); fileInput.value = ''; });
+/* 창 밖에 떨어뜨려 PDF가 그냥 열리는 것 방지 */
+['dragover', 'drop'].forEach(function(ev){
+  window.addEventListener(ev, function(e){ e.preventDefault(); });
+});
+
+async function handleFiles(list){
+  if (!READY){ toast('엔진을 아직 불러오는 중이에요', true); return; }
+  var files = Array.prototype.slice.call(list).filter(function(f){
+    return /\.(pdf|xls|xlsx|xlsm|csv|html?|png|jpe?g|webp|gif|bmp)$/i.test(f.name);
+  });
+  if (!files.length){ toast('PDF · 엑셀 · 이미지 파일만 올릴 수 있어요', true); return; }
+
+  /* ① 먼저 목록에 바로 표시 */
+  var slots = files.map(function(f){
+    var q = {fileName:f.name, vendor:'', items:[], shipping:0, warnings:[], status:'reading', progress:0, stage:''};
+    state.quotes.push(q);
+    return q;
+  });
+  $('emptyState').classList.add('hide');
+  renderFiles();
+  $('loading').classList.remove('hide');
+
+  /* ② 하나씩 읽어서 상태 갱신 */
+  for (var i = 0; i < files.length; i++){
+    (function(slot){
+      slot._prog = function(label, p){ slot.stage = label; slot.progress = p; renderFiles(); };
+    })(slots[i]);
+    try {
+      var r = await readAny(files[i], slots[i]._prog);
+      slots[i].vendor = r.vendor;
+      slots[i].items = r.items;
+      slots[i].shipping = r.shipping;
+      slots[i].warnings = r.warnings;
+      slots[i].kind = r.kind;
+      slots[i].status = 'done';
+    } catch (err){
+      console.error(err);
+      slots[i].status = 'error';
+      slots[i].error = (err && err.message) ? err.message : '알 수 없는 오류';
+    }
+    renderFiles();
+  }
+  $('loading').classList.add('hide');
+  rebuildRows();
+
+  var ok = slots.filter(function(s){ return s.status === 'done'; }).length;
+  toast(ok ? ('견적서 ' + ok + '건을 불러왔어요') : '견적서를 읽지 못했어요', ok === 0);
+}
+
+$('fileList').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if (!b) return;
+  var q = state.quotes, t;
+  if (b.dataset.del !== undefined) q.splice(+b.dataset.del, 1);
+  if (b.dataset.up !== undefined){ var i = +b.dataset.up; if (i > 0){ t = q[i-1]; q[i-1] = q[i]; q[i] = t; } }
+  if (b.dataset.down !== undefined){ var j = +b.dataset.down; if (j < q.length-1){ t = q[j+1]; q[j+1] = q[j]; q[j] = t; } }
+  renderFiles(); rebuildRows();
+});
+
+$('tbody').addEventListener('input', function(e){
+  var el = e.target;
+  if (!el.dataset || !el.dataset.k) return;
+  var r = state.rows[+el.dataset.i], k = el.dataset.k;
+  if (k === 'qty' || k === 'price'){ var v = num(el.value); r[k] = (v === null ? 0 : v); }
+  else r[k] = el.value;
+  var total = 0;
+  state.rows.forEach(function(x){ total += (Number(x.qty) || 0) * (Number(x.price) || 0); });
+  $('grandTotal').textContent = won(total) + '원';
+});
+
+$('tbody').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-row-del]'); if (!b) return;
+  state.rows.splice(+b.dataset.rowDel, 1);
+  renderTable();
+});
+
+$('addRow').addEventListener('click', function(){
+  state.rows.push({name:'', spec:'', unit:'', qty:1, price:0});
+  renderTable();
+});
+$('optSplitShip').addEventListener('change', rebuildRows);
+$('optKeepSpace').addEventListener('change', rebuildRows);
+
+/* =========================================================
+   5. xls 다운로드 (BIFF8 = 진짜 .xls)
+   ========================================================= */
+$('download').addEventListener('click', function(){
+  if (!state.rows.length){ toast('내보낼 품목이 없어요', true); return; }
+  var aoa = [['내용', '규격', '단위', '수량', '예상단가']];
+  state.rows.forEach(function(r){
+    aoa.push([r.name, r.spec || '', r.unit || '', Number(r.qty) || 0, Number(r.price) || 0]);
+  });
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:46}, {wch:10}, {wch:8}, {wch:8}, {wch:12}];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '품목내역');
+  try {
+    XLSX.writeFile(wb, '품목내역(통합).xls', {bookType:'biff8'});
+    var mobile = window.matchMedia('(hover:none)').matches;
+    toast(mobile ? '저장 완료 — 내용을 다시 한 번 확인하세요' : '저장 완료 — 올리기 전 내용을 다시 한 번 확인하세요');
+  } catch (err){
+    console.error(err);
+    XLSX.writeFile(wb, '품목내역(통합).xlsx');
+    toast('xls 생성에 실패해 xlsx로 저장했어요', true);
+  }
+});
+</script>
+</body>
+</html>
